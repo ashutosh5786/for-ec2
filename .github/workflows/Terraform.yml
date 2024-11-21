@@ -1,0 +1,36 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Step 2: Configure AWS credentials using OIDC
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Step 3: Example AWS command (S3 upload in this case)
+      - name: Upload files to S3
+        run: |
+          aws s3 cp ./12.png s3://${{ secrets.S3_BUCKET_NAME }}/
+
+      # Step 4: (Optional) Additional AWS CLI commands or deployment steps
+      - name: Example additional AWS command
+        run: |
+          aws ec2 describe-instances
