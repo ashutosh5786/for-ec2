@@ -1,4 +1,4 @@
-name: Deploy to AWS
+name: Terraform EC2 Provisioning
 
 on:
   push:
@@ -10,11 +10,11 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
+  terraform:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout code
+      # Step 1: Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -25,12 +25,20 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Step 3: Example AWS command (S3 upload in this case)
-      - name: Upload files to S3
-        run: |
-          aws s3 cp ./12.png s3://${{ secrets.S3_BUCKET_NAME }}/
+      # Step 3: Set up Terraform CLI
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.0
 
-      # Step 4: (Optional) Additional AWS CLI commands or deployment steps
-      - name: Example additional AWS command
-        run: |
-          aws ec2 describe-instances
+      # Step 4: Initialize Terraform
+      - name: Terraform Init
+        run: terraform init
+
+      # Step 5: Plan Terraform changes
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan
+
+      # Step 6: Apply Terraform changes
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
