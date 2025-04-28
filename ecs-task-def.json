@@ -18,7 +18,8 @@
         "logDriver": "awslogs",
         "options": {
           "awslogs-group": "/ecs/nginx-task",
-          "awslogs-stream-prefix": "ecs"
+          "awslogs-stream-prefix": "ecs",
+          "awslogs-region": "eu-west-2"
         }
       }
     }
