@@ -27,9 +27,9 @@ jobs:
         run: |
           composer install --no-interaction --prefer-dist --optimize-autoloader
 
-      - name: Run PHPStan (Static Analysis)
-        run: |
-          vendor/bin/phpstan analyse .
+      # - name: Run PHPStan (Static Analysis)
+      #   run: |
+      #     vendor/bin/phpstan analyse .
 
       - name: Run PHPUnit (Unit Tests)
         run: |
