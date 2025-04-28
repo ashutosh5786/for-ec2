@@ -27,9 +27,9 @@ jobs:
         run: |
           composer install --no-interaction --prefer-dist --optimize-autoloader
 
-      # - name: Run PHPStan (Static Analysis)
-      #   run: |
-      #     vendor/bin/phpstan analyse .
+      - name: Run PHPStan (Static Analysis)
+        run: |
+          vendor/bin/phpstan analyse .
 
       - name: Run PHPUnit (Unit Tests)
         run: |
@@ -49,7 +49,7 @@ jobs:
         id: build-image
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: ecs-task-repo
+          ECR_REPOSITORY: <repository-name>
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
@@ -60,16 +60,16 @@ jobs:
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ecs-task-def.json
-          container-name: php-backend
+          task-definition: <path-to-task-definition-file>
+          container-name: <container-name>
           image: ${{ steps.build-image.outputs.image }}
 
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: nginx-task-service-p6f8z3ib
-          cluster: vpc-link-ecs
+          service: <service-name>
+          cluster: <cluster-name>
           wait-for-service-stability: true
-
           
+
