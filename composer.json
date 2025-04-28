@@ -3,7 +3,8 @@
   "description": "A basic PHP backend app for ECS CI/CD demo",
   "require": {},
   "require-dev": {
-    "phpunit/phpunit": "^10"
+    "phpunit/phpunit": "^10",
+    "phpstan/phpstan": "^1.10"
   },
   "autoload": {
     "psr-4": {
