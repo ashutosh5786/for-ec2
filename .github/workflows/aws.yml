@@ -29,7 +29,7 @@ jobs:
 
       - name: Run PHPStan (Static Analysis)
         run: |
-          vendor/bin/phpstan analyse src
+          vendor/bin/phpstan analyse .
 
       - name: Run PHPUnit (Unit Tests)
         run: |
