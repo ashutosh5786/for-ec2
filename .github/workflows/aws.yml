@@ -1,44 +1,73 @@
-name: Terraform EC2 Provisioning
+name: CI/CD Pipeline - PHP Backend to ECS
 
 on:
   push:
     branches:
       - master
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
-  terraform:
+  deploy-php-backend:
+    name: Deploy PHP Backend to ECS
     runs-on: ubuntu-latest
 
-    steps:
-      # Step 1: Checkout the repository
-      - name: Checkout repository
-        uses: actions/checkout@v3
+    permissions:
+      id-token: write # Allow OIDC Token Request
+      contents: read # Read repo contents
 
-      # Step 2: Configure AWS credentials using OIDC
-      - name: Configure AWS credentials
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+
+      - name: Install Composer Dependencies
+        run: |
+          composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Run PHPStan (Static Analysis)
+        run: |
+          vendor/bin/phpstan analyse src
+
+      - name: Run PHPUnit (Unit Tests)
+        run: |
+          vendor/bin/phpunit tests
+
+      - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v2
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Step 3: Set up Terraform CLI
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v2
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and Push Docker Image
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: ecs-task-repo
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          terraform_version: 1.5.0
+          task-definition: ecs-task-def.json
+          container-name: php-backend
+          image: ${{ steps.build-image.outputs.image }}
 
-      # Step 4: Initialize Terraform
-      - name: Terraform Init
-        run: terraform init
-
-      # Step 5: Plan Terraform changes
-      - name: Terraform Plan
-        run: terraform plan -out=tfplan
-
-      # Step 6: Apply Terraform changes
-      - name: Terraform Apply
-        run: terraform apply -auto-approve tfplan
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: nginx-task-service-p6f8z3ib
+          cluster: vpc-link-ecs
+          wait-for-service-stability: true
