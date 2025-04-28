@@ -71,3 +71,5 @@ jobs:
           service: nginx-task-service-p6f8z3ib
           cluster: vpc-link-ecs
           wait-for-service-stability: true
+
+          
